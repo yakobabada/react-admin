@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Check that all needed environment variables are set.
+if [[ -z $PROJECT_ID ]]; then echo 'PROJECT_ID is not defined in your travis environment variables.'; fi
+if [[ -z $CI_SERVICE_ACCOUNT ]]; then echo 'CI_SERVICE_ACCOUNT is not defined in your ci repository environment variables.'; fi
+if [[ -z $CI_SERVICE_ACCOUNT_KEY ]]; then echo 'CI_SERVICE_ACCOUNT_KEY is not defined in your ci repository environment variables.'; fi
+if [[ -z $CF_API_KEY ]]; then echo 'CF_API_KEY is not defined in your ci repository environment variables.'; fi
+if [[ -z $CF_API_EMAIL ]]; then echo 'CF_API_EMAIL is not defined in your ci repository environment variables.'; fi
+
+# To enable blackfire, set the BLACKFIRE_SERVER_ID and BLACKFIRE_SERVER_TOKEN variables.
+if [[ ! -z $BLACKFIRE_SERVER_ID && ! -z $BLACKFIRE_SERVER_TOKEN ]]; then
+    export BLACKFIRE_ENABLED=true
+fi
+
+# Generate random key & jwt for Mercure if not set
+if [[ -z $MERCURE_JWT_KEY ]]; then
+    npm install --global "@clarketm/jwt-cli"
+    export MERCURE_JWT_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+    export MERCURE_JWT=$(jwt sign --noCopy '{"mercure": {"publish": ["*"]}}' $MERCURE_JWT_KEY)
+fi
+
+# Generate random database password if not set
+if [[ -z $DATABASE_PASSWORD ]]; then
+    export DATABASE_PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+fi
+
+export PROJECT_NAME=`echo $REPOSITORY | sed -E "s/\//-/g" | sed -e 's/\(.*\)/\L\1/'`
+export PHP_REPOSITORY="${DOCKER_REPOSITORY}/php"
+export NGINX_REPOSITORY="${DOCKER_REPOSITORY}/nginx"
+export VARNISH_REPOSITORY="${DOCKER_REPOSITORY}/varnish"
+if [[ $BRANCH == $DEPLOYMENT_BRANCH ]]
+then
+    export TAG=latest
+    export API_ENTRYPOINT="${API_SUBDOMAIN}.${DOMAIN}"
+    export MERCURE_ENTRYPOINT="${MERCURE_SUBDOMAIN}.${DOMAIN}"
+    export ADMIN_BUCKET="${ADMIN_SUBDOMAIN}.${DOMAIN}"
+    export CLIENT_BUCKET="${CLIENT_SUBDOMAIN}.${DOMAIN}"
+else
+    export TAG=$RELEASE
+    export API_ENTRYPOINT="${API_SUBDOMAIN}-${RELEASE}.${DOMAIN}"
+    export MERCURE_ENTRYPOINT="${MERCURE_SUBDOMAIN}-${RELEASE}.${DOMAIN}"
+    export ADMIN_BUCKET="${ADMIN_SUBDOMAIN}-${RELEASE}.${DOMAIN}"
+    export CLIENT_BUCKET="${CLIENT_SUBDOMAIN}-${RELEASE}.${DOMAIN}"
+fi
