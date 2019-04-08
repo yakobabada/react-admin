@@ -30,7 +30,7 @@ const PostTitle = ({ record }, api) => {
 //     }
 // }
 
-export const BookShow = (props, api) => (
+export const BookShow = (props) => (
     <Show  title={<PostTitle />} { ...props }>
 <SimpleShowLayout>
     <TextField source="id" label="ID"/>

@@ -4,10 +4,10 @@
 // import { hydraClient, fetchHydra as baseFetchHydra  } from '@api-platform/admin';
 // import { Redirect } from 'react-router-dom';
 // import { createMuiTheme } from '@material-ui/core/styles';
-// import { BookShow } from './Components/Book/Show';
-// import { BookEdit } from './Components/Book/Edit';
-// import { BookCreate } from './Components/Book/Create';
-// import { BookList } from './Components/Book/List';
+import { BookShow } from './Components/Book/Show';
+import { BookEdit } from './Components/Book/Edit';
+import { BookCreate } from './Components/Book/Create';
+import { BookList } from './Components/Book/List';
 //
 // const theme = createMuiTheme({
 //     palette: {
@@ -84,8 +84,9 @@
 
 import React, { Component } from 'react';
 import { ReferenceArrayField, SingleFieldList, ChipField, ReferenceArrayInput, SelectArrayInput, ReferenceField, TextField } from 'react-admin';
-import { AdminBuilder, hydraClient } from '@api-platform/admin';
+import { AdminBuilder, hydraClient, replaceResources } from '@api-platform/admin';
 import parseHydraDocumentation from '@api-platform/api-doc-parser/lib/hydra/parseHydraDocumentation';
+import books from './Components/Book/Inputs.js';
 
 const entrypoint = 'http://localhost:8080/';
 
@@ -93,6 +94,23 @@ export default class extends Component {
     state = { api: null }
 
     componentDidMount() {
+        const books = {
+            name: 'books',
+            list: BookList,
+            create: BookCreate,
+            edit: BookEdit,
+            fields: [
+                {
+                    name: 'title',
+                    input: books,
+                }
+            ]
+        };
+
+        const newResources = [
+            books
+        ];
+
         parseHydraDocumentation(entrypoint).then(({api}) => {
                 const books = api.resources.find(({ name }) => 'books' === name);
                 const author = books.fields.find(({ name }) => 'author' === name);
@@ -102,6 +120,8 @@ export default class extends Component {
                         <TextField source="name" />
                     </ReferenceField>
                 );
+
+                replaceResources(api.resources, newResources);
 
                 this.setState({ api });
             }
